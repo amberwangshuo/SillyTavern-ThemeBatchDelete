@@ -1,0 +1,112 @@
+/* 主题批量删除 */
+#tbd-open-button i {
+    pointer-events: none;
+}
+
+.tbd-root {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+    height: 100%;
+    text-align: left;
+}
+
+.tbd-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.tbd-toolbar .tbd-search {
+    flex: 1 1 200px;
+    min-width: 120px;
+    margin: 0;
+}
+
+.tbd-toolbar .menu_button {
+    white-space: nowrap;
+    margin: 0;
+}
+
+.tbd-count {
+    opacity: 0.8;
+    font-size: calc(var(--mainFontSize) * 0.9);
+}
+
+.tbd-list {
+    flex: 1 1 auto;
+    min-height: 200px;
+    max-height: 60vh;
+    overflow-y: auto;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 6px;
+    padding: 4px;
+}
+
+.tbd-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.tbd-item:hover {
+    background-color: var(--white20a);
+}
+
+.tbd-item.tbd-checked {
+    background-color: var(--white30a);
+}
+
+.tbd-item input[type="checkbox"] {
+    margin: 0;
+    flex: 0 0 auto;
+}
+
+.tbd-item .tbd-name {
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tbd-item .tbd-badge {
+    flex: 0 0 auto;
+    font-size: calc(var(--mainFontSize) * 0.75);
+    opacity: 0.7;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    padding: 0 6px;
+}
+
+.tbd-empty {
+    opacity: 0.6;
+    padding: 12px;
+    text-align: center;
+}
+
+.tbd-confirm-list {
+    max-height: 40vh;
+    overflow-y: auto;
+    margin: 8px 0;
+    padding-left: 1.5em;
+    text-align: left;
+}
+
+.tbd-confirm-list li {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tbd-settings .tbd-settings-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
