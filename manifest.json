@@ -1,11 +1,11 @@
 {
-    "display_name": "Theme Batch Delete / 主题批量删除",
+    "display_name": "Batch Delete / 批量删除",
     "loading_order": 100,
     "requires": [],
     "optional": [],
     "js": "index.js",
     "css": "style.css",
     "author": "amberwangshuo",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "homePage": "https://github.com/amberwangshuo/SillyTavern-ThemeBatchDelete"
 }

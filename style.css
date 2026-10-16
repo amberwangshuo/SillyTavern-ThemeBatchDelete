@@ -1,4 +1,5 @@
-/* 主题批量删除 */
+/* 批量删除 */
+.tbd-entry i,
 #tbd-open-button i {
     pointer-events: none;
 }
@@ -10,6 +11,35 @@
     min-height: 0;
     height: 100%;
     text-align: left;
+}
+
+.tbd-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.tbd-tab {
+    margin: 0;
+    opacity: 0.7;
+    white-space: nowrap;
+    writing-mode: horizontal-tb;
+    width: auto;
+}
+
+.tbd-tab.tbd-tab-active {
+    opacity: 1;
+    background-color: var(--white30a);
+    font-weight: bold;
+}
+
+.tbd-sub:empty {
+    display: none;
+}
+
+.tbd-sub .tbd-preset-type {
+    margin: 0;
+    max-width: 260px;
 }
 
 .tbd-toolbar {
@@ -45,6 +75,13 @@
     padding: 4px;
 }
 
+.tbd-group {
+    font-weight: bold;
+    opacity: 0.8;
+    padding: 8px 8px 2px;
+    font-size: calc(var(--mainFontSize) * 0.9);
+}
+
 .tbd-item {
     display: flex;
     align-items: center;
@@ -68,6 +105,15 @@
     flex: 0 0 auto;
 }
 
+.tbd-item .tbd-thumb {
+    flex: 0 0 auto;
+    width: 64px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 3px;
+    background-color: var(--black30a);
+}
+
 .tbd-item .tbd-name {
     flex: 1 1 auto;
     overflow: hidden;
@@ -75,27 +121,128 @@
     white-space: nowrap;
 }
 
-.tbd-item .tbd-badge {
+.tbd-badge {
     flex: 0 0 auto;
     font-size: calc(var(--mainFontSize) * 0.75);
     opacity: 0.7;
     border: 1px solid currentColor;
     border-radius: 999px;
     padding: 0 6px;
+    white-space: nowrap;
 }
 
-.tbd-empty {
+.tbd-item .tbd-view {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 2px 8px;
+}
+
+.tbd-empty,
+.tbd-loading {
     opacity: 0.6;
     padding: 12px;
     text-align: center;
 }
 
-.tbd-confirm-list {
-    max-height: 40vh;
+.tbd-muted {
+    opacity: 0.6;
+}
+
+/* 预览 */
+.tbd-preview-root {
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tbd-preview-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.tbd-preview h4 {
+    margin: 8px 0 4px;
+}
+
+.tbd-pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 50vh;
+    overflow: auto;
+    margin: 4px 0;
+    padding: 8px;
+    border-radius: 4px;
+    background-color: var(--black30a);
+    font-size: calc(var(--mainFontSize) * 0.9);
+}
+
+.tbd-details {
+    margin: 4px 0;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 4px;
+    padding: 4px 8px;
+}
+
+.tbd-details > summary {
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.tbd-entry-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    opacity: 0.8;
+    font-size: calc(var(--mainFontSize) * 0.85);
+    margin: 4px 0;
+}
+
+.tbd-fields {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 4px 12px;
+    align-items: start;
+}
+
+.tbd-fields .tbd-field-name {
+    font-weight: bold;
+    opacity: 0.8;
+    padding-top: 6px;
+}
+
+.tbd-fields .tbd-pre {
+    margin: 0;
+}
+
+.tbd-preview-image {
+    text-align: center;
+}
+
+.tbd-full-image {
+    max-width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+/* 确认弹窗 */
+.tbd-confirm-groups {
+    text-align: left;
+    max-height: 50vh;
     overflow-y: auto;
     margin: 8px 0;
+}
+
+.tbd-confirm-group {
+    margin-bottom: 6px;
+}
+
+.tbd-confirm-list {
+    margin: 2px 0 6px;
     padding-left: 1.5em;
-    text-align: left;
 }
 
 .tbd-confirm-list li {
