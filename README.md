@@ -8,6 +8,8 @@
 - **正则**：全局、预设内、角色内
 - **背景图**
 
+另外，**主题支持批量导入**：「UI 主题」的导入按钮旁边多一个按钮，一次可以选多个主题 JSON 文件。
+
 每一项都可以先点「眼睛」查看内容，看完再决定勾不勾选。勾选可以跨标签页累积，最后一次删除。
 
 在 SillyTavern 1.19.0 上实测过。
@@ -49,6 +51,15 @@ https://github.com/amberwangshuo/SillyTavern-ThemeBatchDelete
    看完点「勾选待删」或「取消勾选」，或「返回」。
 4. 点「删除所选」，确认弹窗按类别列出要删的名字，再点「删除」。
 
+## 批量导入主题
+
+1. 用户设置 → UI 主题，点导入按钮右边的「批量导入主题」按钮。
+2. 一次选多个 `.json` 文件。
+3. 弹窗先列出将要导入的和将要跳过的（已有同名主题、本批里重名、文件没有主题名、不是有效 JSON），确认后逐个导入。
+4. 含 `@import` 外链的主题，酒馆会像平时一样逐个弹窗询问是否允许。
+
+导入走的是酒馆自己的导入逻辑，所以导入完可以直接在下拉框里切换，不用刷新页面。
+
 ## 各类数据是怎么删的
 
 - 主题、世界书、预设、背景图：调酒馆自己的接口删文件，并同步更新页面上的下拉框和列表。删掉当前正在用的那个时，自动切到剩下的第一个。
@@ -65,6 +76,8 @@ https://github.com/amberwangshuo/SillyTavern-ThemeBatchDelete
 ## English
 
 Adds a batch delete dialog to SillyTavern for UI themes, World Info books, presets (chat/text completion, KoboldAI, NovelAI, instruct, context, system prompt, reasoning), regex scripts (global, preset, scoped) and system backgrounds. Every item has a preview button so you can look at its contents before ticking it for deletion. Selections accumulate across tabs and are deleted in one go after a confirmation that lists everything by category.
+
+Also adds batch import for UI themes: a button next to the theme import button accepts several JSON files at once, lists what will be imported or skipped (duplicates, missing name, invalid JSON) and then runs SillyTavern's own import for each file, so the new themes can be applied right away.
 
 Install from the Extensions panel with the URL above. Tested on SillyTavern 1.19.0.
 

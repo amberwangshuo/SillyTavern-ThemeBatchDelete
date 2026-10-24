@@ -72,8 +72,24 @@ const STRINGS = {
         regexHanded: (n) => `${n} 条正则已交给正则扩展，请在它的弹窗里确认。`,
         regexFallback: '正则扩展的批量删除按钮不可用，已直接从设置中移除，请刷新页面。',
         reloadHint: '若要重新导入同名主题，请刷新页面。',
-        settingsDesc: '在主题、世界书、预设、正则、背景图的面板里各有一个扫帚按钮，也可以从这里打开。',
+        settingsDesc: '在主题、世界书、预设、正则、背景图的面板里各有一个扫帚按钮，也可以从这里打开。主题的导入按钮旁边还有一个批量导入按钮。',
         settingsOpen: '打开批量删除',
+        // 批量导入主题
+        importButton: '批量导入主题',
+        importTitle: (n) => `批量导入 ${n} 个主题文件`,
+        importWillImport: (n) => `将导入 ${n} 个：`,
+        importWillSkip: (n) => `跳过 ${n} 个：`,
+        importReasonInvalid: '不是有效的主题文件',
+        importReasonNoName: '文件里没有主题名',
+        importReasonExists: '已有同名主题',
+        importReasonDupInBatch: '和本批里另一个文件同名',
+        importAtImportNote: (n) => `其中 ${n} 个主题包含 @import 外链，酒馆会逐个弹窗询问是否允许。`,
+        importOk: '导入',
+        importNothing: '没有可导入的文件。',
+        importing: (done, total) => `正在导入 ${done} / ${total}`,
+        importDone: (ok) => `已导入 ${ok} 个主题。`,
+        importDonePartial: (ok, fail) => `已导入 ${ok} 个，${fail} 个失败（详见控制台）。`,
+        importNoInput: '找不到酒馆的主题导入控件，无法批量导入。',
         // 预览
         previewEntries: (n) => `共 ${n} 条条目`,
         previewKeys: '关键词',
@@ -133,8 +149,23 @@ const STRINGS = {
         regexHanded: (n) => `${n} regex scripts handed to the Regex extension; confirm in its popup.`,
         regexFallback: 'Regex bulk delete button unavailable; removed from settings directly. Reload the page.',
         reloadHint: 'Reload the page before re-importing a theme with the same name.',
-        settingsDesc: 'A broom button sits in the theme, world info, preset, regex and background panels. You can also open it here.',
+        settingsDesc: 'A broom button sits in the theme, world info, preset, regex and background panels. You can also open it here. A batch import button sits next to the theme import button.',
         settingsOpen: 'Open batch delete',
+        importButton: 'Batch import themes',
+        importTitle: (n) => `Batch import ${n} theme files`,
+        importWillImport: (n) => `Will import ${n}:`,
+        importWillSkip: (n) => `Skipping ${n}:`,
+        importReasonInvalid: 'not a valid theme file',
+        importReasonNoName: 'no theme name in file',
+        importReasonExists: 'a theme with this name already exists',
+        importReasonDupInBatch: 'same name as another file in this batch',
+        importAtImportNote: (n) => `${n} of them contain @import URLs; SillyTavern will ask about each one.`,
+        importOk: 'Import',
+        importNothing: 'Nothing to import.',
+        importing: (done, total) => `Importing ${done} / ${total}`,
+        importDone: (ok) => `Imported ${ok} themes.`,
+        importDonePartial: (ok, fail) => `Imported ${ok}, ${fail} failed (see console).`,
+        importNoInput: 'SillyTavern theme import control not found; cannot batch import.',
         previewEntries: (n) => `${n} entries`,
         previewKeys: 'Keys',
         previewSecondary: 'Secondary keys',
@@ -830,6 +861,147 @@ async function runDeletion(byTab, t) {
     document.dispatchEvent(new CustomEvent('batchDeleteDone', { detail: { deleted, failed, handed } }));
 }
 
+// ---------- 批量导入主题 ----------
+// 做法：逐个把文件塞进酒馆自己的导入控件并触发 change，让酒馆走它自己的 importTheme。
+// 这样酒馆内存里的主题列表也会更新，导入后能直接切换，不用刷新页面。
+
+function readFileText(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result ?? ''));
+        reader.onerror = () => reject(reader.error);
+        reader.readAsText(file);
+    });
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function themeExists(name) {
+    return Array.from(document.querySelectorAll('#themes option')).some(o => o.value === name);
+}
+
+/** 把一个文件交给酒馆的导入控件，等它处理完（成功或失败）。 */
+async function importOneThemeViaSillyTavern(input, file, name) {
+    const transfer = new DataTransfer();
+    transfer.items.add(file);
+    input.files = transfer.files;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    // 酒馆处理完会把 input.value 清空（files 变为空）。含 @import 的主题会弹窗等用户，所以上限放宽。
+    const deadline = Date.now() + 10 * 60 * 1000;
+    while (input.files && input.files.length > 0 && Date.now() < deadline) {
+        await sleep(100);
+    }
+    await sleep(50);
+    return themeExists(name);
+}
+
+async function batchImportThemes(files) {
+    const t = getStrings();
+    const input = document.getElementById('ui_preset_import_file');
+    if (!(input instanceof HTMLInputElement)) {
+        toastr.error(t.importNoInput);
+        return;
+    }
+    const plan = [];
+    const seen = new Set();
+    for (const file of files) {
+        let name = null;
+        let reason = null;
+        let hasAtImport = false;
+        try {
+            const parsed = JSON.parse(await readFileText(file));
+            if (!parsed || typeof parsed !== 'object') {
+                reason = t.importReasonInvalid;
+            } else if (!parsed.name || typeof parsed.name !== 'string') {
+                reason = t.importReasonNoName;
+            } else {
+                name = parsed.name;
+                hasAtImport = typeof parsed.custom_css === 'string' && parsed.custom_css.includes('@import');
+                if (themeExists(name)) reason = t.importReasonExists;
+                else if (seen.has(name)) reason = t.importReasonDupInBatch;
+                else seen.add(name);
+            }
+        } catch {
+            reason = t.importReasonInvalid;
+        }
+        plan.push({ file, name, reason, hasAtImport });
+    }
+    const toImport = plan.filter(x => !x.reason);
+    const toSkip = plan.filter(x => x.reason);
+    if (!toImport.length) {
+        toastr.warning(t.importNothing);
+        if (toSkip.length) console.warn(`[${MODULE_NAME}] batch import: all skipped`, toSkip.map(x => `${x.file.name}: ${x.reason}`));
+        return;
+    }
+    const atImportCount = toImport.filter(x => x.hasAtImport).length;
+    const html = `
+        <h3>${escapeHtml(t.importTitle(plan.length))}</h3>
+        <div class="tbd-confirm-groups">
+            <div class="tbd-confirm-group"><b>${escapeHtml(t.importWillImport(toImport.length))}</b>
+                <ul class="tbd-confirm-list">${toImport.map(x => `<li>${escapeHtml(x.name)}</li>`).join('')}</ul></div>
+            ${toSkip.length ? `<div class="tbd-confirm-group"><b>${escapeHtml(t.importWillSkip(toSkip.length))}</b>
+                <ul class="tbd-confirm-list">${toSkip.map(x => `<li>${escapeHtml(x.file.name)} <span class="tbd-muted">(${escapeHtml(x.reason)})</span></li>`).join('')}</ul></div>` : ''}
+        </div>
+        ${atImportCount ? `<div class="tbd-muted">${escapeHtml(t.importAtImportNote(atImportCount))}</div>` : ''}
+    `;
+    const result = await callGenericPopup(html, POPUP_TYPE.CONFIRM, '', {
+        okButton: t.importOk,
+        cancelButton: t.cancelButton,
+        allowVerticalScrolling: true,
+    });
+    if (result !== POPUP_RESULT.AFFIRMATIVE) {
+        return;
+    }
+    const progress = toastr.info(t.importing(0, toImport.length), '', { timeOut: 0, extendedTimeOut: 0, tapToDismiss: false });
+    let ok = 0, fail = 0;
+    for (let i = 0; i < toImport.length; i++) {
+        const { file, name } = toImport[i];
+        try {
+            const imported = await importOneThemeViaSillyTavern(input, file, name);
+            if (imported) ok++; else { fail++; console.error(`[${MODULE_NAME}] theme import failed: ${file.name}`); }
+        } catch (error) {
+            fail++;
+            console.error(`[${MODULE_NAME}] theme import failed: ${file.name}`, error);
+        }
+        if (progress) progress.find('.toast-message').text(t.importing(i + 1, toImport.length));
+    }
+    if (progress) toastr.clear(progress);
+    if (fail === 0) toastr.success(t.importDone(ok), '', { timeOut: 6000 });
+    else toastr.warning(t.importDonePartial(ok, fail), '', { timeOut: 10000 });
+}
+
+function addImportButton() {
+    const t = getStrings();
+    const anchor = document.getElementById('ui_preset_import_button');
+    if (!anchor || document.getElementById('tbd-import-button')) {
+        return;
+    }
+    const input = el('input');
+    input.type = 'file';
+    input.id = 'tbd-import-input';
+    input.accept = '.json';
+    input.multiple = true;
+    input.hidden = true;
+    input.addEventListener('change', async () => {
+        const files = Array.from(input.files || []);
+        input.value = '';
+        if (files.length) await batchImportThemes(files);
+    });
+    const button = el('div', 'menu_button menu_button_icon margin0 tbd-entry');
+    button.id = 'tbd-import-button';
+    button.title = t.importButton;
+    button.innerHTML = '<i class="fa-solid fa-layer-group"></i>';
+    button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        input.click();
+    });
+    anchor.insertAdjacentElement('afterend', button);
+    button.insertAdjacentElement('afterend', input);
+}
+
 // ---------- 入口按钮 ----------
 
 function makeEntryButton(t, options) {
@@ -911,7 +1083,10 @@ function addSettingsPanel() {
 jQuery(async () => {
     await loadOptionalModules();
     addEntryButtons();
+    addImportButton();
     addSettingsPanel();
 });
+
+export { batchImportThemes };
 
 export { openBatchDeleteDialog };
